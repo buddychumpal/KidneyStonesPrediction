@@ -1,5 +1,5 @@
 ---
-title: "Predicting Occurance of Kidney Stones: Exploratory Data Analysis of Relevant Features in NHANES 2017 - 2020"
+title: "Predicting Occurance of Kidney Stones Using NHANES 2017 - 2020 Data"
 author: |
   | Brook Thomson, 300653729; 
   | Phase 1 Group Members:
@@ -245,11 +245,15 @@ Figure 8b shows the average the number of prescriptions taken by those who have 
 
 In Figure 8c, the proportion of people who have kidney stones and those who do not are shown against people who have a sleeping issue and do not have a sleeping issue. The proportion of kidney stones for people who answer yes (have sleeping issue) is higher than those who answer no (no sleeping issue). From this, it backs up research linking risk of kidney stones to sleeping issues (University of Florida Health, 2019). 
 
+\newpage
+
+# 6. Data Analysis
+
 
 
 \newpage
 
-# 6. References
+# 7. References
 
 &nbsp;&nbsp;&nbsp;&nbsp;Abufaraj, M., Xu, T., Cao, C., Waldhoer, T., Seitz, C., D’andrea, D., Siyam, A., Tarawneh, R., Fajkovic, H., Schernhammer, E., Yang, L., & Shariat, S. F. (2020). Prevalence and Trends in Kidney Stone Among Adults in the USA: Analyses of National Health and Nutrition Examination Survey 2007–2018 Data. European Urology Focus, 7(6). https://doi.org/10.1016/j.euf.2020.08.011
 
