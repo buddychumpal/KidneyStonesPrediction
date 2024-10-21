@@ -249,7 +249,23 @@ In Figure 8c, the proportion of people who have kidney stones and those who do n
 
 # 6. Data Analysis
 
+```{r}
+head(df)
+```
+```{r}
+sum(is.na(df$DIQ160))
+length(df$DIQ160)
+```
 
+```{r}
+set.seed(5)
+train <- df %>% dplyr::slice_sample(prop = 0.75)
+test  <- dplyr::anti_join(df, train, by = 'SEQN')
+x_train <- subset(train, select = -c(KIQ026))
+y_train <- subset(train, select = c(KIQ026))
+x_test <- subset(test, select = -c(KIQ026))
+y_test <- subset(test, select = c(KIQ026))
+```
 
 \newpage
 
