@@ -256,9 +256,9 @@ head(df)
 sum(is.na(df$DIQ160))
 length(df$DIQ160)
 ```
-
 ```{r}
 set.seed(5)
+df$KIQ026 <- as.factor(df$KIQ026)
 train <- df %>% dplyr::slice_sample(prop = 0.75)
 test  <- dplyr::anti_join(df, train, by = 'SEQN')
 x_train <- subset(train, select = -c(KIQ026))
@@ -266,6 +266,51 @@ y_train <- subset(train, select = c(KIQ026))
 x_test <- subset(test, select = -c(KIQ026))
 y_test <- subset(test, select = c(KIQ026))
 ```
+
+146 predictors is too many for a model, I want to first try a small model based  
+off values that appeared to have a link with kidney stones in our EDA (demographics  
+and medical conditions), and see that effectiveness, then fine tune.  
+
+My initial thinking was a decision tree classifier, so patients would be able to  
+clearly understand why diagnostic decisions were made. For more complexity and  
+higher accuracy however, I have instead gone with a random forest model.
+
+```{r}
+factors <- c("RIAGENDR", "RIDAGEYR", "RIDRETH3", "DMDMARTZ","BPQ020", "BPQ080", "DIQ010")
+train_subset <- subset(train, select = c(RIAGENDR,RIDAGEYR, RIDRETH3,
+																				 DMDMARTZ,BPQ020, BPQ080, DIQ010,KIQ026))
+train_subset %>% mutate_at(factors, factor)
+first_for <- randomForest(KIQ026 ~., data = train_subset)
+print(first_for)
+```
+This is not an effective model, as it is just classifying everything as the majority,  
+so everyone is classified as no kidney stones, even when they have it. This is  
+because of the imbalance in our data. As well as testing out other predictors,  
+I will use ROSE so there are more instances of the minority (kidney stones being  
+present), which will also hopefully improve prediction abilities.
+
+```{r}
+data.rose <- ROSE(KIQ026~., data = train_subset, seed = 5, p = 0.35)$data
+table(data.rose$KIQ026)
+```
+```{r}
+first_for_rose <- randomForest(KIQ026 ~., data = data.rose)
+print(first_for_rose)
+```
+
+While the model is now predicting outcomes other than 2, it actually has a much  
+higher error rate. So I definitely want to investigate other predictors I can use.  
+
+To narrow our choices down, I will remove all columns where more than 50% of the  
+data was NAs.
+We also know while the medical conditions were highly associated with kidney stones,  
+they are also highly associated with each other, so we could reduce dimensionality  
+by either removing some or using feature combinations.
+
+```{r}
+df_subset <- df[, which(colMeans(!is.na(df)) > 0.5)]
+```
+
 
 \newpage
 
