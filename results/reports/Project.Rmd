@@ -312,14 +312,12 @@ print(first_for_rose)
 While the model is now predicting outcomes other than 2, it actually has a much  
 higher error rate. So I definitely want to investigate other predictors I can use.  
 
-To narrow our choices down, I will remove all columns where more than 50% of the  
-data was NAs.
-We also know while the medical conditions were highly associated with kidney stones,  
-they are also highly associated with each other, so we could reduce dimensionality  
-by either removing some or using feature combinations.
+To narrow our choices down, I will remove all columns and rows where more than 50% of the  
+data was NAs, then further investigate the data.
 
 ```{r}
-df_subset <- df[, which(colMeans(!is.na(df)) > 0.5)]
+df_subset <- df[which(rowMeans(!is.na(df)) > 0.5), which(colMeans(!is.na(df)) > 0.5)]
+table(df_subset$KIQ026)
 ```
 
 
