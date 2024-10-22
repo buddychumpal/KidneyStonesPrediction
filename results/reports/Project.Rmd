@@ -42,6 +42,7 @@ Data from the most recent cycle is used, [NHANES 2017 - March 2020](https://wwwn
 
 ```{r}
 df <- read.csv("../../data/merged_data_clean.csv")
+df$DBD895[df$DBD895==9999 | df$DBD895==5555 | df$DBD895==7777] <- NA
 ```
 
 Data from each NHANES cycle is released as many tables, each containing a collection of similar features. For the specific focus on kidney stone disease, only a subset of tables is used, and from these tables, only a subset of key features. The integrated dataset used in this project is composed of `r nrow(df)` instances/rows, and `r ncol(df)` columns. The column `SEQN` contains a unique identifier for each instance, and the column `KIQ026` contains the target variable. Thus, there are `r ncol(df) - 2` informative features. 
@@ -319,6 +320,7 @@ For imputation, due to the large amount of data, kNN takes too much time, so I w
 be using mean and mode instead.
 
 ```{r}
+
 df_subset <- df[which(rowMeans(!is.na(df)) > 0.5), which(colMeans(!is.na(df)) > 0.5)]
 table(df_subset$KIQ026)
 ```
@@ -348,8 +350,9 @@ miss_cat <- c("DBD100","DSDANTA","DIQ160","KIQ005","KIQ042","KIQ044","KIQ046",
 df_subset_missc <- subset(df_subset, select = miss_cat)
 
 for(i in colnames(df_subset_missn)){
-  df_subset_missn[,i][is.na(df_subset_missn[,i])] <- mean_col[i]
-  df_subset[,i] <- df_subset_missn[,i]}
+  df_subset_missn[,i][is.na(df_subset_missn[,i])] <- mean_col[i]}
+
+df_subset_missn <- scale(df_subset_missn)
 
 for (i in 1:ncol(df_subset_missc)){
   mod_val <- as.factor(as.numeric(Mode(df_subset_missc[,i], na.rm=TRUE)))
@@ -359,8 +362,13 @@ for (i in colnames(df_subset_missc)){
 	df_subset[,i] <- df_subset_missc[,i]
 }
 
+for (i in colnames(df_subset_missn)){
+	df_subset[,i] <- df_subset_missn[,i]
+}
+
 subset.rose <- ROSE(KIQ026~., data = df_subset, seed = 5, p = 0.35)$data
 table(subset.rose$KIQ026)
+
 ```
 
 \newpage
