@@ -176,7 +176,14 @@ knitr::include_graphics("../figures/cond_ks_prop.png")
 
 Figure 3: The proportion of people with various other conditions who also have had kidney stones.
 
-Gallstones and weak/failing kidneys are the most strongly associated with kidney stone occurance, with close to 25% of people having (either or both of) those conditions also having had kidney stones. Between ~11% and ~15% of people who have the remaining conditions also have had kidney stones. All these are much higher than overall kidney stone prevalence (9.4%), indicating that these features are likely to be useful for a predictive model. It can be noted that some of these conditions may also possess a high degree of correlation between each other, which may be reflected in their similar proportions in Figure 3, e.g. being overweight and having high cholesterol. Feature combination/transformation could be used to reduce dimensionality.
+Gallstones and weak/failing kidneys are the most strongly associated with kidney stone occurance, with close to 25% of people having (either or both of) those conditions also having had kidney stones. Between ~11% and ~15% of people who have the remaining conditions also have had kidney stones. All these are much higher than overall kidney stone prevalence (9.4%), indicating that these features are likely to be useful for a predictive model. It can be noted that some of these conditions may also possess a high degree of correlation between each other, which is investigated below.
+
+```{r}
+knitr::include_graphics("../figures/corrcond.png")
+```
+Figure 3.a: Correlation of medical conditions
+This indicates that none of the medical conditions are strongly correlated.
+
 
 ## 5.3 Laboratory Analysis
 
