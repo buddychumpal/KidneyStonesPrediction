@@ -47,7 +47,7 @@ df$DBD895[df$DBD895==9999 | df$DBD895==5555 | df$DBD895==7777] <- NA
 
 Data from each NHANES cycle is released as many tables, each containing a collection of similar features. For the specific focus on kidney stone disease, only a subset of tables is used, and from these tables, only a subset of key features. The integrated dataset used in this project is composed of `r nrow(df)` instances/rows, and `r ncol(df)` columns. The column `SEQN` contains a unique identifier for each instance, and the column `KIQ026` contains the target variable. Thus, there are `r ncol(df) - 2` informative features. 
 
-The target variable belongs to the Questionnaire component of NHANES, and is phrased as "Ever had kidney stones?". Possible answers of this question are "Yes", "No", "Refused", and "Don't know". Only Yes/No are used as the binary classification label of this project (details are discussed in Section 1.4: Data Integration).
+The target variable belongs to the Questionnaire component of NHANES, and is phrased as "Ever had kidney stones?". Possible answers of this question are "Yes", "No", "Refused", and "Don't know". Only Yes/No are used as the binary classification label of this project (details are discussed in Section 3.3: Data Integration).
 
 Counts (and proportions) of the binary target variable classes are as follows:
 
@@ -263,10 +263,6 @@ In Figure 8c, the proportion of people who have kidney stones and those who do n
 # 6. Data Analysis
 
 ```{r}
-sum(is.na(df$DIQ160))
-length(df$DIQ160)
-```
-```{r}
 set.seed(5)
 df$KIQ026 <- as.factor(df$KIQ026)
 train <- df %>% dplyr::slice_sample(prop = 0.75)
@@ -277,13 +273,15 @@ x_test <- subset(test, select = -c(KIQ026))
 y_test <- subset(test, select = c(KIQ026))
 ```
 
-146 predictors is too many for a model, I want to first try a small model based  
-off values that appeared to have a link with kidney stones in our EDA (demographics  
-and medical conditions), and see that effectiveness, then fine tune.  
+I started with 145 predictors to choose from, which is too many for a model. 
+I decided to first make a small model, with predictors that didn't have any NA values,
+and appeared to have a link with kidney stones in our EDA (demographics  
+and medical conditions). From there I can see the effectiveness of these predictors alone,  
+and the effectiveness of a randomForest model when our target is a minority.
 
 My initial thinking was a decision tree classifier, so patients would be able to  
-clearly understand why diagnostic decisions were made. For more complexity and  
-higher accuracy however, I have instead gone with a random forest model.
+clearly understand why diagnostic decisions were made, but I decided on a  
+randomForest model as it allows for more complexity than a singular decision tree.
 
 ```{r, results = 'hide'}
 factors <- c("RIAGENDR", "RIDAGEYR", "RIDRETH3", "DMDMARTZ","BPQ020", "BPQ080", "DIQ010")
@@ -292,27 +290,29 @@ train_subset <- subset(train, select = c(RIAGENDR,RIDAGEYR, RIDRETH3,
 train_subset %>% mutate_at(factors, factor)
 ```
 
+Outcome of initial, small, randomForest model:
+
 ```{r}
 first_for <- randomForest(KIQ026 ~., data = train_subset)
 print(first_for)
 ```
-This is not an effective model, as it is just classifying everything as the majority,  
-so everyone is classified as no kidney stones, even when they have it. This is  
-because of the imbalance in our data. As well as testing out other predictors,  
-I will use ROSE so there are more instances of the minority (kidney stones being  
-present), which will also hopefully improve prediction abilities.
+This model classed everything as the majority (no kidney stones), likely due to  
+the high prevalence of the majority. I decided to combat this by using ROSE
+(Randomly Over Sampling Examples) so the minority would be more prevalent.
 
 ```{r}
-data.rose <- ROSE(KIQ026~., data = train_subset, seed = 5, p = 0.35)$data
-table(data.rose$KIQ026)
+data.rose <- ROSE(KIQ026~., data = train_subset, seed = 5, p = 0.45)$data
 ```
+
+The same randomForest model after applying ROSE:
+
 ```{r}
 first_for_rose <- randomForest(KIQ026 ~., data = data.rose)
 print(first_for_rose)
 ```
 
-While the model is now predicting outcomes other than 2, it actually has a much  
-higher error rate. So I definitely want to investigate other predictors I can use.  
+With the majority no longer overwhelming, we can see this model is okay, but not  
+ideal, with a 27% error rate. More worryingly, the error rate for 
 
 To narrow our choices down, I will remove all columns and rows where more than 50% of the  
 data was NAs, then further investigate the data.
@@ -320,9 +320,7 @@ For imputation, due to the large amount of data, kNN takes too much time, so I w
 be using mean and mode instead.
 
 ```{r}
-
 df_subset <- df[which(rowMeans(!is.na(df)) > 0.5), which(colMeans(!is.na(df)) > 0.5)]
-table(df_subset$KIQ026)
 ```
 
 
@@ -333,6 +331,8 @@ factors <- c("RIAGENDR", "RIDRETH3", "DMDEDUC2", "DMDMARTZ", "DBQ095Z", "DBD100"
 	"KIQ022", "KIQ026", "KIQ005","KIQ042", "KIQ044", "KIQ046", "PAQ605",
 	"PAQ620", "PAQ635", "PAQ650", "PAQ665", "SMQ020", "SMD460","SLQ050") 
 df_subset %>% mutate_at(factors, factor)
+subset_train <- df_subset %>% dplyr::slice_sample(prop = 0.75)
+subset_test  <- dplyr::anti_join(df_subset, subset_train, by = 'SEQN')
 ```
 
 ```{r}
@@ -342,33 +342,39 @@ missing_num <- c("INDFMPIR", "BMXBMI", "BPXOSY1", "BPXOSY2", "BPXOSY3",
 								 "DBD900", "DBD905", "DBD910", "KIQ480", "PAD680","ALQ130",
 								 "RXDDAYS", "RXDCOUNT")
 
-df_subset_missn <- subset(df_subset, select = missing_num)
-mean_col <- colMeans(df_subset_missn, na.rm = TRUE)
+train_subset_missn <- subset(subset_train, select = missing_num)
+test_subset_missn <- subset(subset_test, select = missing_num)
+mean_col <- colMeans(train_subset_missn, na.rm = TRUE)
 
 miss_cat <- c("DBD100","DSDANTA","DIQ160","KIQ005","KIQ042","KIQ044","KIQ046",
 							"SMD460")
-df_subset_missc <- subset(df_subset, select = miss_cat)
+train_subset_missc <- subset(subset_train, select = miss_cat)
+test_subset_missc <-subset(subset_test, select = miss_cat)
 
-for(i in colnames(df_subset_missn)){
-  df_subset_missn[,i][is.na(df_subset_missn[,i])] <- mean_col[i]}
+for(i in colnames(train_subset_missn)){
+  train_subset_missn[,i][is.na(train_subset_missn[,i])] <- mean_col[i]
+  test_subset_missn[,i][is.na(test_subset_missn[,i])] <- mean_col[i]}
 
-df_subset_missn <- scale(df_subset_missn)
+train_subset_missn <- scale(train_subset_missn)
+test_subset_missn <- scale(test_subset_missn)
 
-for (i in 1:ncol(df_subset_missc)){
-  mod_val <- as.factor(as.numeric(Mode(df_subset_missc[,i], na.rm=TRUE)))
-  df_subset_missc[,i][is.na(df_subset_missc[,i])] <- mod_val}
+for (i in 1:ncol(train_subset_missc)){
+  mod_val <- as.factor(as.numeric(Mode(train_subset_missc[,i], na.rm=TRUE)))
+  train_subset_missc[,i][is.na(train_subset_missc[,i])] <- mod_val
+  test_subset_missc[,i][is.na(test_subset_missc[,i])] <- mod_val}
 
-for (i in colnames(df_subset_missc)){
-	df_subset[,i] <- df_subset_missc[,i]
+for (i in colnames(train_subset_missc)){
+	subset_train[,i] <- train_subset_missc[,i]
+	subset_test[,i] <- test_subset_missc[,i]
 }
 
-for (i in colnames(df_subset_missn)){
-	df_subset[,i] <- df_subset_missn[,i]
+for (i in colnames(train_subset_missn)){
+	subset_train[,i] <- train_subset_missn[,i]
+	subset_test[,i] <- test_subset_missn[,i]
 }
 
-subset.rose <- ROSE(KIQ026~., data = df_subset, seed = 5, p = 0.35)$data
+subset.rose <- ROSE(KIQ026~., data = subset_train, seed = 5, p = 0.35)$data
 table(subset.rose$KIQ026)
-
 ```
 
 \newpage
