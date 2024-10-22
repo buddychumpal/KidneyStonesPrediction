@@ -19,6 +19,7 @@ library(tidyverse)
 library(dbplyr)
 library(randomForest)
 library(ROSE)
+library(DescTools)
 ```
 
 \newpage
@@ -314,12 +315,53 @@ higher error rate. So I definitely want to investigate other predictors I can us
 
 To narrow our choices down, I will remove all columns and rows where more than 50% of the  
 data was NAs, then further investigate the data.
+For imputation, due to the large amount of data, kNN takes too much time, so I will  
+be using mean and mode instead.
 
 ```{r}
 df_subset <- df[which(rowMeans(!is.na(df)) > 0.5), which(colMeans(!is.na(df)) > 0.5)]
 table(df_subset$KIQ026)
 ```
 
+
+```{r, results='hide'}
+
+factors <- c("RIAGENDR", "RIDRETH3", "DMDEDUC2", "DMDMARTZ", "DBQ095Z", "DBD100", "DRQSPREP",
+	"DR1TWSZ", "DSDANTA", "BPQ020", "BPQ080", "DIQ010", "DIQ160", "DBQ700",
+	"KIQ022", "KIQ026", "KIQ005","KIQ042", "KIQ044", "KIQ046", "PAQ605",
+	"PAQ620", "PAQ635", "PAQ650", "PAQ665", "SMQ020", "SMD460","SLQ050") 
+df_subset %>% mutate_at(factors, factor)
+```
+
+```{r}
+missing_num <- c("INDFMPIR", "BMXBMI", "BPXOSY1", "BPXOSY2", "BPXOSY3",
+								 "BPXODI1", "BPXODI2", "BPXODI3", "BPXOPLS1", "BPXOPLS2",
+								 "BPXOPLS3", "LBXSBU", "LBXSCA", "LBXSUA", "URDACT", "URDFLOW1",
+								 "DBD900", "DBD905", "DBD910", "KIQ480", "PAD680","ALQ130",
+								 "RXDDAYS", "RXDCOUNT")
+
+df_subset_missn <- subset(df_subset, select = missing_num)
+mean_col <- colMeans(df_subset_missn, na.rm = TRUE)
+
+miss_cat <- c("DBD100","DSDANTA","DIQ160","KIQ005","KIQ042","KIQ044","KIQ046",
+							"SMD460")
+df_subset_missc <- subset(df_subset, select = miss_cat)
+
+for(i in colnames(df_subset_missn)){
+  df_subset_missn[,i][is.na(df_subset_missn[,i])] <- mean_col[i]
+  df_subset[,i] <- df_subset_missn[,i]}
+
+for (i in 1:ncol(df_subset_missc)){
+  mod_val <- as.factor(as.numeric(Mode(df_subset_missc[,i], na.rm=TRUE)))
+  df_subset_missc[,i][is.na(df_subset_missc[,i])] <- mod_val}
+
+for (i in colnames(df_subset_missc)){
+	df_subset[,i] <- df_subset_missc[,i]
+}
+
+subset.rose <- ROSE(KIQ026~., data = df_subset, seed = 5, p = 0.35)$data
+table(subset.rose$KIQ026)
+```
 
 \newpage
 
