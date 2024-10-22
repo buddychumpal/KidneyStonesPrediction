@@ -15,6 +15,10 @@ output:
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(knitr)
 library(kableExtra)
+library(tidyverse)
+library(dbplyr)
+library(randomForest)
+library(ROSE)
 ```
 
 \newpage
@@ -250,9 +254,6 @@ In Figure 8c, the proportion of people who have kidney stones and those who do n
 # 6. Data Analysis
 
 ```{r}
-head(df)
-```
-```{r}
 sum(is.na(df$DIQ160))
 length(df$DIQ160)
 ```
@@ -275,11 +276,14 @@ My initial thinking was a decision tree classifier, so patients would be able to
 clearly understand why diagnostic decisions were made. For more complexity and  
 higher accuracy however, I have instead gone with a random forest model.
 
-```{r}
+```{r, results = 'hide'}
 factors <- c("RIAGENDR", "RIDAGEYR", "RIDRETH3", "DMDMARTZ","BPQ020", "BPQ080", "DIQ010")
 train_subset <- subset(train, select = c(RIAGENDR,RIDAGEYR, RIDRETH3,
 																				 DMDMARTZ,BPQ020, BPQ080, DIQ010,KIQ026))
 train_subset %>% mutate_at(factors, factor)
+```
+
+```{r}
 first_for <- randomForest(KIQ026 ~., data = train_subset)
 print(first_for)
 ```
